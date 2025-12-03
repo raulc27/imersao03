@@ -1,0 +1,21 @@
+[project]
+name = "imersao03"
+version = "0.1.0"
+description = "NA"
+authors = [
+    {name = "Fernando da Silva",email = "fernando.schoulten@hotmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas (>=2.3.3,<3.0.0)",
+    "numpy (>=2.3.5,<3.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)",
+    "pyarrow (>=22.0.0,<23.0.0)",
+    "fastparquet (>=2024.11.0,<2025.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
