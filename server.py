@@ -4,6 +4,7 @@ from shinywidgets import render_widget
 from globals import df_ipca
 import plotly.express as px
 import plotly.graph_objects as go
+import pandas as pd
 
 
 # Back end ----
@@ -23,6 +24,26 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
         return dados
     
+    @reactive.calc
+    def preparar_dados_fantable():
+        modelo_selecionado = input.modelos()
+        df_fantable = (
+            obter_dados_fanchart()
+            .query("tipo == @modelo_selecionado")
+            .filter(["data_referencia", "ic_inferior", "valor", "ic_superior"])
+            .assign(data_referencia = lambda x: pd.to_datetime(x.data_referencia).dt.strftime("%m/%Y"))
+            .rename(
+                columns = {
+                    "data_referencia": "Período",
+                    "ic_inferior": "I.C. Inferior",
+                    "valor": "Previsão",
+                    "ic_superior": "I.C. Superior"
+                }
+            )
+            .round(2)
+        )
+        return df_fantable
+
     @render_widget
     def fanchart():
         df_fanchart = obter_dados_fanchart()
@@ -62,3 +83,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
 
         return fig
+
+    @render.data_frame
+    def fantable():
+        return preparar_dados_fantable()
