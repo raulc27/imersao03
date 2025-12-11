@@ -82,6 +82,35 @@ def server(input: Inputs, output: Outputs, session: Session):
         valor_realizado = previsao.query("data_referencia == data_referencia.max()").valor.round(2).iloc[0]
         return (mes_corrente, valor_realizado)
 
+    @reactive.calc
+    def gerar_tabela_tracking():
+        modelo_selecionado = input.modelos()
+        df_tracking = pd.read_csv("dados/tracking.csv")
+        df_historico = pd.read_parquet("dados/df_mensal.parquet")
+        df_tracking = (
+            df_tracking
+            .set_index("data_referencia")
+            .join(df_historico.filter(["ipca"]), how = "left")
+            .reset_index()
+            .drop(labels = ["ic_inferior", "ic_superior", "variavel"], axis = "columns")
+            .query("tipo == @modelo_selecionado")
+            .assign(
+                data_referencia = lambda x: pd.to_datetime(x.data_referencia).dt.strftime("%m/%Y"),
+                **{"Erro de Previsão": lambda x: x.ipca - x.valor}
+                )
+            .rename(
+                columns = {
+                    "data_referencia": "Data Referência",
+                    "valor": "Previsão",
+                    "tipo": "Modelo",
+                    "data_previsao": "Data de Previsão",
+                    "ipca": "Observado"
+                }
+            )
+            .round(2)
+        )
+        return df_tracking
+
     @render_widget
     def fanchart():
         df_fanchart = obter_dados_fanchart()
@@ -139,7 +168,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.value_box(
             f"Previsão {obter_previsao_mensal()[0]}",
             f"{obter_previsao_mensal()[1]}%",
-            showcase = icon_svg("calendar")
+            showcase = icon_svg("percent")
         )
     
     @render.ui
@@ -147,5 +176,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.value_box(
             f"Previsão {obter_ultimo_valor_mensal()[0]}",
             f"{obter_ultimo_valor_mensal()[1]}%",
-            showcase = icon_svg("calendar")
+            showcase = icon_svg("magnifying-glass-chart")
         )
+    
+    @render.data_frame
+    def tracking():
+        return render.DataGrid(gerar_tabela_tracking(), summary = False)
